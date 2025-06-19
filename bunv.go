@@ -19,18 +19,6 @@ import (
 
 var withPackages []string
 
-func generateDependencyHash(packages []string) string {
-	allDeps := append([]string{"@types/node:latest"}, packages...)
-	sort.Strings(allDeps)
-
-	hasher := sha256.New()
-	for _, dep := range allDeps {
-		hasher.Write([]byte(dep))
-	}
-
-	return fmt.Sprintf("%x", hasher.Sum(nil))[:16]
-}
-
 const packageJSONTemplate = `{
   "name": "bunv-temp",
   "version": "1.0.0",
@@ -66,7 +54,6 @@ func (d Dependencies) HashString() string {
 }
 
 func getDependencies(scriptFile string) Dependencies {
-	// Extract dependencies from script header
 	headerDeps, _ := extractDependenciesFromHeader(scriptFile)
 	mergedDeps := map[string]string{"@types/node": "latest"}
 	for _, pkg := range withPackages {
@@ -240,16 +227,16 @@ var addCmd = &cobra.Command{
 			}
 		}
 		jsonContent := strings.Join(jsonLines, "\n")
-		var header map[string]interface{}
+		var header map[string]any
 		if jsonContent != "" {
 			_ = json.Unmarshal([]byte(jsonContent), &header)
 		}
 		if header == nil {
-			header = map[string]interface{}{}
+			header = map[string]any{}
 		}
-		deps, _ := header["dependencies"].(map[string]interface{})
+		deps, _ := header["dependencies"].(map[string]any)
 		if deps == nil {
-			deps = map[string]interface{}{}
+			deps = map[string]any{}
 		}
 
 		// Parse new dependencies from args
@@ -315,16 +302,10 @@ func extractDependenciesFromHeader(scriptPath string) (map[string]string, error)
 	defer f.Close()
 
 	scanner := bufio.NewScanner(f)
-	maxLines := 30
-	lineNum := 0
 	inBlock := false
 	var jsonLines []string
 	for scanner.Scan() {
 		line := scanner.Text()
-		lineNum++
-		if lineNum > maxLines {
-			break
-		}
 		trimmed := strings.TrimSpace(line)
 		if !inBlock {
 			if trimmed == "// /// script" {
@@ -343,12 +324,12 @@ func extractDependenciesFromHeader(scriptPath string) (map[string]string, error)
 		return nil, nil // No block found
 	}
 	jsonContent := strings.Join(jsonLines, "\n")
-	var header map[string]interface{}
+	var header map[string]any
 	if err := json.Unmarshal([]byte(jsonContent), &header); err != nil {
 		return nil, nil // Invalid JSON
 	}
 	deps := map[string]string{}
-	if depObj, ok := header["dependencies"].(map[string]interface{}); ok {
+	if depObj, ok := header["dependencies"].(map[string]any); ok {
 		for k, v := range depObj {
 			if s, ok := v.(string); ok {
 				deps[k] = s
