@@ -1,0 +1,9 @@
+{
+  "checksums": [
+    {
+      "id": "github_release/github.com/goreleaser/goreleaser/v2.10.2/goreleaser_Darwin_all.tar.gz",
+      "checksum": "939101B7495E00FD24FFBACAE3232F5E805591054E97BB09593B7BB2D6F584BC",
+      "algorithm": "sha256"
+    }
+  ]
+}
