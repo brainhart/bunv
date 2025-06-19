@@ -148,7 +148,6 @@ var runCmd = &cobra.Command{
 		}
 
 		bunArgs := append([]string{"run", hardlinkScriptPath}, scriptArgs...)
-		bunCmd := exec.Command("bun", bunArgs...)
 
 		// Set NODE_PATH to the cacheDir, plus any existing NODE_PATH
 		env := os.Environ()
@@ -163,18 +162,17 @@ var runCmd = &cobra.Command{
 		if !nodePathSet {
 			env = append(env, fmt.Sprintf("NODE_PATH=%s", cacheDir))
 		}
-		bunCmd.Env = env
 
-		bunCmd.Stdout = os.Stdout
-		bunCmd.Stderr = os.Stderr
-		bunCmd.Stdin = os.Stdin
+		bunPath, err := exec.LookPath("bun")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error finding bun executable: %v\n", err)
+			os.Exit(1)
+		}
 
-		if err := bunCmd.Run(); err != nil {
-			if exitError, ok := err.(*exec.ExitError); ok {
-				if status, ok := exitError.Sys().(syscall.WaitStatus); ok {
-					os.Exit(status.ExitStatus())
-				}
-			}
+		bunArgs = append([]string{bunPath}, bunArgs...)
+		err = syscall.Exec(bunPath, bunArgs, env)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error executing bun: %v\n", err)
 			os.Exit(1)
 		}
 	},
